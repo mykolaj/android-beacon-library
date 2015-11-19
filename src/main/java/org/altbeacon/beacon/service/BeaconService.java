@@ -53,12 +53,12 @@ import org.altbeacon.bluetooth.BluetoothCrashResolver;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
@@ -69,8 +69,8 @@ import java.util.concurrent.RejectedExecutionException;
 public class BeaconService extends Service {
     public static final String TAG = "BeaconService";
 
-    private final Map<Region, RangeState> rangedRegionState = new HashMap<Region, RangeState>();
-    private final Map<Region, MonitorState> monitoredRegionState = new HashMap<Region, MonitorState>();
+    private final Map<Region, RangeState> rangedRegionState = new ConcurrentHashMap<Region, RangeState>();
+    private final Map<Region, MonitorState> monitoredRegionState = new ConcurrentHashMap<Region, MonitorState>();
     int trackedBeaconsPacketCount;
     private final Handler handler = new Handler();
     private int bindCount = 0;
@@ -490,14 +490,10 @@ public class BeaconService extends Service {
             Iterator<Region> regionIterator = regions.iterator();
             while (regionIterator.hasNext()) {
                 Region region = regionIterator.next();
-                // Need to check if region is null in case it was removed from the collection by
-                // another thread during iteration
-                if (region != null) {
-                    if (region.matchesBeacon(beacon)) {
-                        matched.add(region);
-                    } else {
-                        LogManager.d(TAG, "This region (%s) does not match beacon: %s", region, beacon);
-                    }
+                if (region.matchesBeacon(beacon)) {
+                    matched.add(region);
+                } else {
+                    LogManager.d(TAG, "This region (%s) does not match beacon: %s", region, beacon);
                 }
             }
 
